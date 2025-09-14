@@ -1,0 +1,122 @@
+# Docker Compose para API de pedidos con replicación y alta disponibilidad
+version: '3.8'
+
+services:
+  # Balanceador de carga NGINX
+  nginx:
+    image: nginx:alpine
+    container_name: orders-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    restart: unless-stopped
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Instancia 1 de la API
+  api-1:
+    build: .
+    container_name: orders-api-1
+    environment:
+      - PORT=5000
+      - JWT_SECRET_KEY=super-secret-key-change-in-production
+      - REDIS_URL=redis://redis:6379
+      - FLASK_ENV=production
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Instancia 2 de la API
+  api-2:
+    build: .
+    container_name: orders-api-2
+    environment:
+      - PORT=5000
+      - JWT_SECRET_KEY=super-secret-key-change-in-production
+      - REDIS_URL=redis://redis:6379
+      - FLASK_ENV=production
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Instancia 3 de la API
+  api-3:
+    build: .
+    container_name: orders-api-3
+    environment:
+      - PORT=5000
+      - JWT_SECRET_KEY=super-secret-key-change-in-production
+      - REDIS_URL=redis://redis:6379
+      - FLASK_ENV=production
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - orders-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis para rate limiting y cache
+  redis:
+    image: redis:7-alpine
+    container_name: orders-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - orders-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio de monitoreo (opcional)
+  monitoring:
+    image: nginx:alpine
+    container_name: orders-monitoring
+    ports:
+      - "8081:80"
+    volumes:
+      - ./monitoring.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - orders-network
+    restart: unless-stopped
+
+networks:
+  orders-network:
+    driver: bridge
+    name: orders-network
+
+volumes:
+  redis-data:
+    driver: local
+    name: orders-redis-data
