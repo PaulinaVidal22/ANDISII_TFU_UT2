@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders API - Dashboard de Monitoreo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .status-section {
+            padding: 30px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .status-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .status-healthy {
+            border-color: #28a745;
+        }
+        
+        .status-warning {
+            border-color: #ffc107;
+        }
+        
+        .status-error {
+            border-color: #dc3545;
+        }
+        
+        .status-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .healthy { background: #28a745; }
+        .warning { background: #ffc107; }
+        .error { background: #dc3545; }
+        
+        .api-endpoints {
+            padding: 30px;
+            background: white;
+        }
+        
+        .endpoint {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .endpoint-method {
+            font-weight: bold;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-right: 15px;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .method-get { background: #28a745; }
+        .method-post { background: #007bff; }
+        .method-put { background: #ffc107; color: #333; }
+        .method-delete { background: #dc3545; }
+        
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            flex-grow: 1;
+        }
+        
+        .endpoint-desc {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .refresh-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .last-updated {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .loading { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 Orders API</h1>
+            <p>Dashboard de Monitoreo y Estado del Sistema</p>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-icon">📊</div>
+                <div class="metric-value" id="total-orders">--</div>
+                <div class="metric-label">Total Pedidos</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">👥</div>
+                <div class="metric-value" id="total-users">--</div>
+                <div class="metric-label">Usuarios Registrados</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">💰</div>
+                <div class="metric-value" id="total-amount">--</div>
+                <div class="metric-label">Monto Total</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-value" id="system-status">--</div>
+                <div class="metric-label">Estado del Sistema</div>
+            </div>
+        </div>
+        
+        <div class="status-section">
+            <h2 style="margin-bottom: 20px;">Estado de los Servicios</h2>
+            <div class="status-grid">
+                <div class="status-card status-healthy">
+                    <div class="status-header">
+                        <div class="status-indicator healthy"></div>
+                        <h3>Load Balancer (NGINX)</h3>
+                    </div>
+                    <p>Distribuyendo carga entre 3 instancias de la API</p>
+                    <p><strong>Puerto:</strong> 8080</p>
+                </div>
+                
+                <div class="status-card status-healthy">
+                    <div class="status-header">
+                        <div class="status-indicator healthy"></div>
+                        <h3>API Instances (Flask)</h3>
+                    </div>
+                    <p>3 réplicas ejecutándose con health checks</p>
+                    <p><strong>Rate Limiting:</strong> Activo</p>
+                </div>
+                
+                <div class="status-card status-healthy">
+                    <div class="status-header">
+                        <div class="status-indicator healthy"></div>
+                        <h3>Redis Cache</h3>
+                    </div>
+                    <p>Almacenamiento para rate limiting y cache</p>
+                    <p><strong>Persistencia:</strong> Habilitada</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="api-endpoints">
+            <h2 style="margin-bottom: 25px;">Endpoints Disponibles</h2>
+            
+            <h3 style="margin: 20px 0 10px 0; color: #666;">Autenticación</h3>
+            <div class="endpoint">
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/register</span>
+                <span class="endpoint-desc">Registrar nuevo usuario</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/login</span>
+                <span class="endpoint-desc">Iniciar sesión y obtener token</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/logout</span>
+                <span class="endpoint-desc">Cerrar sesión (requiere auth)</span>
+            </div>
+            
+            <h3 style="margin: 20px 0 10px 0; color: #666;">Gestión de Pedidos</h3>
+            <div class="endpoint">
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/orders</span>
+                <span class="endpoint-desc">Crear nuevo pedido (requiere auth)</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/orders</span>
+                <span class="endpoint-desc">Listar pedidos con paginación (requiere auth)</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/orders/{id}</span>
+                <span class="endpoint-desc">Consultar pedido específico (requiere auth)</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-put">PUT</span>
+                <span class="endpoint-path">/api/orders/{id}</span>
+                <span class="endpoint-desc">Actualizar estado del pedido (requiere auth)</span>
+            </div>
+            
+            <h3 style="margin: 20px 0 10px 0; color: #666;">Sistema</h3>
+            <div class="endpoint">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/health</span>
+                <span class="endpoint-desc">Health check del sistema</span>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/stats</span>
+                <span class="endpoint-desc">Estadísticas del sistema (requiere auth)</span>
+            </div>
+        </div>
+        
+        <div class="last-updated">
+            <p>Última actualización: <span id="last-update">--</span></p>
+            <p><small>Los datos se actualizan automáticamente cada 30 segundos</small></p>
+        </div>
+    </div>
+    
+    <button class="refresh-button" onclick="updateMetrics()">🔄 Actualizar</button>
+    
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        async function updateMetrics() {
+            try {
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const healthData = await healthResponse.json();
+                
+                // Actualizar estado del sistema
+                document.getElementById('system-status').textContent = 
+                    healthData.status === 'healthy' ? '✅ Saludable' : '❌ Error';
+                
+                // Actualizar métricas básicas
+                if (healthData.services) {
+                    document.getElementById('total-orders').textContent = 
+                        healthData.services.orders_count || '0';
+                    document.getElementById('total-users').textContent = 
+                        healthData.services.users_count || '0';
+                }
+                
+                // Intentar obtener estadísticas detalladas (puede fallar si no hay token)
+                try {
+                    // Este endpoint requiere autenticación, por lo que puede fallar
+                    // En un entorno real, tendrías un token de monitoreo
+                    document.getElementById('total-amount').textContent = '--';
+                } catch (e) {
+                    document.getElementById('total-amount').textContent = '--';
+                }
+                
+                document.getElementById('last-update').textContent = 
+                    new Date().toLocaleString('es-ES');
+                
+            } catch (error) {
+                console.error('Error updating metrics:', error);
+                document.getElementById('system-status').textContent = '❌ Error';
+            }
+        }
+        
+        // Actualizar métricas al cargar la página
+        updateMetrics();
+        
+        // Actualizar automáticamente cada 30 segundos
+        setInterval(updateMetrics, 30000);
+        
+        // Agregar algunos efectos visuales
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.08)';
+            });
+        });
+    </script>
+</body>
+</html>
