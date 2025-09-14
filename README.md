@@ -250,19 +250,19 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### Comandos Útiles
 ```bash
 # Ver estado de contenedores
-docker-compose ps
+docker compose ps
 
 # Ver logs en tiempo real
-docker-compose logs -f
+docker compose logs -f
 
 # Escalar instancias
-docker-compose up -d --scale api=5
+docker compose up -d --scale api=5
 
 # Parar servicios
-docker-compose down
+docker compose down
 
 # Reiniciar con rebuild
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## 🧪 Testing y Demostración

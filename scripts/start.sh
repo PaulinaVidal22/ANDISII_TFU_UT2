@@ -34,7 +34,7 @@ check_docker() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
+    if ! docker compose version &> /dev/null; then
         error "Docker Compose no está instalado. Por favor instala Docker Compose primero."
         exit 1
     fi
@@ -64,7 +64,7 @@ check_system_resources() {
 # Limpiar contenedores anteriores
 cleanup() {
     log "Limpiando contenedores anteriores..."
-    docker-compose down --volumes --remove-orphans 2>/dev/null || true
+    docker compose down --volumes --remove-orphans 2>/dev/null || true
     
     # Remover imágenes no utilizadas
     docker system prune -f &>/dev/null || true
@@ -75,22 +75,22 @@ cleanup() {
 # Construir las imágenes
 build_images() {
     log "Construyendo imágenes Docker..."
-    docker-compose build --no-cache
+    docker compose build --no-cache
     log "Imágenes construidas exitosamente ✓"
 }
 
 # Iniciar los servicios
 start_services() {
     log "Iniciando servicios con Docker Compose..."
-    docker-compose up -d
+    docker compose up -d
     
     log "Esperando que los servicios estén listos..."
     sleep 10
     
     # Verificar que los servicios estén ejecutándose
-    if ! docker-compose ps | grep -q "Up"; then
+    if ! docker compose ps | grep -q "Up"; then
         error "Algunos servicios no se iniciaron correctamente"
-        docker-compose logs
+        docker compose logs
         exit 1
     fi
     
@@ -134,7 +134,7 @@ show_system_info() {
     echo -e "📈 Monitoreo:        http://localhost:8081"
     echo
     echo -e "${BLUE}=== SERVICIOS ACTIVOS ===${NC}"
-    docker-compose ps
+    docker compose ps
     echo
     echo -e "${BLUE}=== ENDPOINTS DISPONIBLES ===${NC}"
     echo -e "POST /api/register    - Registrar usuario"

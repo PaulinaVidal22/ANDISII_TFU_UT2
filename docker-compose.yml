@@ -1,5 +1,4 @@
 # Docker Compose para API de pedidos con replicación y alta disponibilidad
-version: '3.8'
 
 services:
   # Balanceador de carga NGINX

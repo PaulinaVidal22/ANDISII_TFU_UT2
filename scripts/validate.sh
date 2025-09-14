@@ -30,7 +30,7 @@ validate_docker() {
         return 1
     fi
     
-    if ! docker-compose --version > /dev/null 2>&1; then
+    if ! docker compose version > /dev/null 2>&1; then
         error "Docker Compose no está instalado"
         return 1
     fi
